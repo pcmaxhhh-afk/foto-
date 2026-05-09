@@ -1,1 +1,880 @@
-# foto-
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <title>Diario Visual Retro</title>
+  <style>
+    :root {
+      --retro-blue: #469cf39d;
+      --light-blue: #085f7f;
+      --vintage-cream: #0d0535;
+      --dark-blue: #292D53;
+      --text: #020134;
+      --muted: rgba(41, 45, 83, 0.8);
+      --panel: rgba(255, 255, 255, 0.92);
+      --shadow: 0 18px 50px rgba(41, 45, 83, 0.15);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background-color:rgb(12, 36, 77); color: var(--#30066b); font-family: 'Courier New', Courier, monospace; }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+    }
+
+    .app-shell { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 24px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 8px 0; }
+    h1 { margin: 0; font-size: clamp(1.8rem, 3vw, 2.8rem); letter-spacing: 0.08em; text-transform: uppercase; color: var(--retro-blue); }
+    .access-btn, .logout-btn, .button, .secondary { font-family: inherit; }
+    .access-btn { background: var(--retro-blue); color: var(--vintage-cream); border: 1px solid var(--dark-blue); border-radius: 12px; padding: 10px 18px; cursor: pointer; transition: transform 0.2s ease, background 0.2s ease; }
+    .access-btn:hover { background: var(--light-blue); transform: translateY(-1px); }
+
+    .user-info { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; }
+    .user-info span { color: var(--vintage-cream); }
+    .logout-btn { background: var(--vintage-cream); border: 1px solid var(--dark-blue); border-radius: 12px; color: var(--dark-blue); padding: 8px 14px; cursor: pointer; transition: background 0.2s ease; opacity: 1; }
+    .logout-btn:hover { background: var(--light-blue); }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(41, 45, 83, 0.88); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+    .modal-overlay.show { opacity: 1; visibility: visible; }
+    .modal-content { background: var(--vintage-cream); padding: 24px; border-radius: 28px; max-width: 480px; width: 90%; text-align: center; box-shadow: var(--shadow); }
+    .modal-content h2 { margin-top: 0; color: var(--retro-blue); font-size: 1.5rem; }
+    .modal-content .field-group { margin-top: 18px; }
+    .modal-content .field-group label { font-size: 0.95rem; color: var(--dark-blue); }
+    .modal-content input { margin-bottom: 10px; }
+    .modal-content .action-row { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
+    .modal-content .button { min-width: 120px; }
+
+    .panel { margin-bottom: 32px; padding: 20px; background: rgba(123, 75, 236, 0.453); border-radius: 20px; box-shadow: var(--shadow); border: 1px solid rgba(58, 98, 137, 0.16); }
+    .hidden { display: none !important; }
+    .panel h2 { margin-top: 0; color: var(--retro-blue); letter-spacing: 0.06em; text-transform: uppercase; font-size: 1.1rem; }
+
+    .field-group { display: grid; gap: 12px; margin-top: 16px; }
+    .field-group label { display: grid; gap: 6px; font-size: 0.9rem; color: var(--dark-blue); }
+    input[type="text"], input[type="email"], input[type="password"], textarea, input[type="file"] { width: 100%; background: rgba(255,255,255,0.92); border: 1px solid rgba(58, 98, 137, 0.2); border-radius: 12px; color: var(--dark-blue); font-family: inherit; font-size: 0.95rem; padding: 12px 14px; }
+    textarea { min-height: 120px; resize: vertical; white-space: pre-wrap; line-height: 1.6; }
+
+    .action-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    .button, .secondary { border: 1px solid rgba(66, 117, 167, 0.24); border-radius: 12px; background: var(--retro-blue); color: var(--vintage-cream); padding: 10px 16px; cursor: pointer; transition: all 0.2s ease; text-decoration: none; font-size: 0.95rem; }
+    .secondary { background: transparent; color: var(--dark-blue); }
+    .button:hover, .secondary:hover { opacity: 0.92; transform: translateY(-1px); }
+
+    .feed-title { margin: 0 0 16px; font-size: 1.2rem; color:#5e92ce; letter-spacing: 0.08em; text-transform: uppercase; }
+    .gallery, .feed-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 20px 0; }
+
+    .card {
+      position: relative;
+      border-radius: 25px;
+      background: #f1f6ff;
+      cursor: pointer;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.4);
+    }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 20px 60px rgba(41, 45, 83, 0.16); }
+    .card-image {
+      width: 100%;
+      border-radius: 20px;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      filter: none;
+      display: block;
+    }
+
+    .card-body {
+      padding: 12px 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+.card-title {
+      font-size: 0.85rem !important; /* Tamaño pequeño para que no se amontone */
+      font-weight: bold;
+      color: var(--dark-blue);
+      margin-top: 5px;
+    }
+    .card-date {
+      font-size: 0.7rem !important;
+      color: var(--muted);
+    }
+    .card-text { display: none; }
+
+
+    /* BOTONES DE LA CARD (EDITAR/BORRAR): Ahora sólidos */
+    .card-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; padding-bottom: 10px; padding-right: 10px; }
+    .card-actions button { border: 1px solid var(--dark-blue); background: var(--retro-blue); color: var(--vintage-cream); padding: 8px 12px; border-radius: 10px; cursor: pointer; font-size: 0.88rem; transition: background 0.2s ease; opacity: 1; }
+    .card-actions button:hover { background: var(--light-blue); color: var(--dark-blue); }
+    
+    /* BOTÓN BORRAR: Sólido rojizo */
+    .card-actions button.delete { border-color: #b23a3a; background: #ff6e6e; color: white; }
+    .card-actions button.delete:hover { background: #b23a3a; }
+    
+    /* Modal Expandido */
+    .entry-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(41, 45, 83, 0.95); z-index: 2000; justify-content: center; align-items: center; padding: 20px; overflow-y: auto; }
+    .entry-modal.show { display: flex; }
+    /* Contenedor del Modal */
+    .entry-modal-content {
+      background: #F5F2EC;
+      width: 92vw;
+      height: 85vh;
+      border-radius: 30px;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      overflow: hidden;
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+
+    /* Imagen dentro del modal */
+    .entry-modal-image {
+      width: 100%;
+      height: 60%;
+      object-fit: cover;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .entry-modal-icons {
+      display: flex;
+      justify-content: flex-start;
+      gap: 18px;
+      margin: 14px 18px 0;
+    }
+    .entry-modal-icons span {
+      font-size: 1.45rem;
+      cursor: pointer;
+      color: var(--dark-blue);
+      transition: color 0.2s ease, transform 0.2s ease;
+    }
+    .entry-modal-icons span:hover {
+      color: var(--retro-blue);
+      transform: translateY(-1px);
+    }
+
+    .entry-modal-gallery { display: flex; gap: 10px; margin: 14px 18px 0; justify-content: flex-start; overflow-x: auto; }
+    .entry-modal-thumbnail { width: 52px; height: 52px; border-radius: 14px; cursor: pointer; border: 2px solid transparent; transition: border 0.2s ease; object-fit: cover; }
+    .entry-modal-thumbnail.active { border-color: var(--retro-blue); }
+
+    .entry-modal-info {
+      padding: 15px;
+      flex: 1;
+      overflow-y: auto;
+      text-align: left;
+    }
+
+.entry-modal-title {
+      font-size: 1.4rem !important; /* Título grande y llamativo */
+      font-weight: 800;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; /* Más estilo IG */
+    }
+.entry-modal-text {
+      font-size: 1rem !important; /* Tamaño estándar de lectura */
+      line-height: 1.5; /* Espaciado entre líneas para que no canse la vista */
+      color: #333;
+      text-align: left;
+      margin-top: 10px;
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      white-space: pre-wrap;
+      margin: 0;
+    }
+.entry-modal-date {
+      font-size: 0.8rem !important;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #8e8e8e;
+      margin-top: 15px;
+    }
+
+    .entry-modal-controls { display: flex; gap: 10px; justify-content: space-between; flex-wrap: wrap; margin-top: 12px; }
+    .entry-modal-btn { background: var(--retro-blue); color: var(--vintage-cream); border: none; padding: 10px 16px; border-radius: 12px; cursor: pointer; font-size: 0.92rem; transition: background 0.2s ease; }
+    .entry-modal-btn:hover { background: var(--light-blue); }
+    .entry-modal-close { background: transparent; color: var(--dark-blue); font-size: 1.6rem; cursor: pointer; border: none; position: absolute; top: 18px; right: 18px; }
+    .entry-modal-close:hover { opacity: 0.8; }
+
+    .status { margin-top: 12px; color: var(--muted); font-size: 0.9rem; }
+
+    /* Mantener siempre 3 columnas en todo dispositivo */
+    .gallery, .feed-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <h1>DIARIO VISUAL</h1>
+      <div id="userBar">
+        <button class="access-btn" id="accessBtn">Acceso Editor</button>
+        <div class="user-info" id="userInfo" style="display: none;">
+          <span id="userName"></span>
+          <button class="logout-btn" onclick="cerrarSesion()">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Modal de Login -->
+    <div class="modal-overlay" id="loginModal">
+      <div class="modal-content">
+        <h2>Acceso Editor</h2>
+        <button class="button" id="showLoginBtn">Iniciar sesión</button>
+        <div id="loginFields" class="hidden">
+          <div class="field-group">
+            <label>
+              Gmail
+              <input type="email" id="emailInput" placeholder="tu@email.com" />
+            </label>
+            <label>
+              Contraseña
+              <input type="password" id="passwordInput" placeholder="Tu contraseña" />
+            </label>
+          </div>
+          <div class="action-row">
+            <button class="button" onclick="iniciarSesion()">Entrar</button>
+            <button class="secondary" onclick="cancelLogin()">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section class="panel hidden" id="adminPanel">
+      <h2>Panel de administración</h2>
+      <div class="field-group">
+        <label>
+          Imagen
+          <input type="file" id="imageInput" multiple accept="image/*" />
+        </label>
+        <label>
+          Título corto
+          <input type="text" id="titleInput" placeholder="Ej. Caminata en el bosque" />
+        </label>
+        <label>
+          Texto largo
+          <textarea id="textInput" placeholder="Escribe tu entrada..." spellcheck="true"></textarea>
+        </label>
+      </div>
+      <div class="action-row">
+        <button class="button" id="publishBtn">Publicar</button>
+        <button class="secondary hidden" id="cancelEditBtn">Cancelar edición</button>
+      </div>
+      <p class="hint">modo editor.</p>
+    </section>
+
+    <section>
+      <h2 class="feed-title">Feed público</h2>
+      <div class="gallery" id="entries"></div>
+      <p class="status" id="feedStatus">Cargando publicaciones...</p>
+    </section>
+  </div>
+
+  <!-- Modal Expandido para Ver Entrada Completa -->
+  <div class="entry-modal" id="entryModal">
+    <div class="entry-modal-content">
+      <button class="entry-modal-close" onclick="closeEntryModal()">×</button>
+      <img class="entry-modal-image" id="modalImage" src="" alt="Imagen de la entrada" />
+     
+      <div class="entry-modal-gallery" id="modalGallery"></div>
+      <div class="entry-modal-info">
+        <h2 class="entry-modal-title" id="modalTitle"></h2>
+        <p class="entry-modal-text" id="modalText"></p>
+        <p class="entry-modal-date" id="modalDate"></p>
+      </div>
+      <div class="entry-modal-controls" id="modalControls"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.35.0/dist/umd/supabase.min.js"></script>
+  <script>
+    // Correo que tiene privilegios de administración.
+    const adminEmail = "sagredoarianacompu2023@gmail.com";
+
+    const SUPABASE_URL = "https://bgcbavxgvhezxsjgkqeb.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnY2JhdnhndmhlenhzamdrcWViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4Mzk0NzcsImV4cCI6MjA5MzQxNTQ3N30.i1lVwyKzAXcZ5MM3M6rzpSG9-bjp6khfYwe6qHlxhRY";
+    const SUPABASE_BUCKET = "Entries"; 
+    // Debe ser idéntico al nombre en el Dashboard
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      db: { schema: 'public' }
+    });
+
+    const signInBtn = document.getElementById("signInBtn");
+    const createEditorBtn = document.getElementById("createEditorBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const userInfo = document.getElementById("userInfo");
+    const modeLabel = document.getElementById("modeLabel");
+    const adminPanel = document.getElementById("adminPanel");
+
+    const imageInput = document.getElementById("imageInput");
+    const titleInput = document.getElementById("titleInput");
+    const textInput = document.getElementById("textInput");
+    const publishBtn = document.getElementById("publishBtn");
+    const cancelEditBtn = document.getElementById("cancelEditBtn");
+    const entriesContainer = document.getElementById("entries");
+    const feedStatus = document.getElementById("feedStatus");
+
+    // Modal elements
+    const accessBtn = document.getElementById("accessBtn");
+    const loginModal = document.getElementById("loginModal");
+    const showLoginBtn = document.getElementById("showLoginBtn");
+    const loginFields = document.getElementById("loginFields");
+    const emailInput = document.getElementById("emailInput");
+    const passwordInput = document.getElementById("passwordInput");
+
+    let currentUser = null;
+    let currentEditId = null;
+    let currentImageUrl = "";
+    let currentImagePath = "";
+    let currentImageUrls = [];
+    let currentImagePaths = [];
+    let currentModalEntry = null;
+    let currentModalImageIndex = 0;
+
+    // Modal event listeners
+    accessBtn.addEventListener("click", () => {
+      loginModal.classList.add("show");
+    });
+
+    showLoginBtn.addEventListener("click", () => {
+      loginFields.classList.remove("hidden");
+      showLoginBtn.classList.add("hidden");
+    });
+
+    loginModal.addEventListener("click", (e) => {
+      if (e.target === loginModal) {
+        cancelLogin();
+      }
+    });
+
+    document.getElementById("entryModal").addEventListener("click", (e) => {
+      if (e.target.id === "entryModal") {
+        closeEntryModal();
+      }
+    });
+
+    publishBtn.addEventListener("click", subirPublicacion);
+    cancelEditBtn.addEventListener("click", resetForm);
+
+    async function initAuth() {
+      const {
+        data: { session },
+        error
+      } = await supabaseClient.auth.getSession();
+      if (error) console.warn("Supabase Auth error:", error.message);
+      currentUser = session?.user || null;
+      updateInterface();
+
+      supabaseClient.auth.onAuthStateChange((event, session) => {
+        currentUser = session?.user || null;
+        updateInterface();
+      });
+    }
+
+    function updateInterface() {
+      const isAdmin = currentUser?.email === adminEmail;
+      const userBar = document.getElementById("userBar");
+      const accessBtn = document.getElementById("accessBtn");
+      const userInfo = document.getElementById("userInfo");
+      const userName = document.getElementById("userName");
+
+      if (currentUser) {
+        userName.textContent = currentUser.user_metadata?.full_name || currentUser.email;
+        accessBtn.style.display = "none";
+        userInfo.style.display = "block";
+      } else {
+        accessBtn.style.display = "block";
+        userInfo.style.display = "none";
+      }
+
+      if (isAdmin) {
+        adminPanel.classList.remove("hidden");
+      } else {
+        adminPanel.classList.add("hidden");
+      }
+    }
+
+    function cancelLogin() {
+      loginModal.classList.remove("show");
+      loginFields.classList.add("hidden");
+      showLoginBtn.classList.remove("hidden");
+      emailInput.value = "";
+      passwordInput.value = "";
+    }
+
+    async function cerrarSesion() {
+      await supabaseClient.auth.signOut();
+      currentUser = null;
+      updateInterface();
+    }
+
+    function showStatus(message) {
+      feedStatus.textContent = message;
+    }
+
+    function formatTimestamp(value) {
+      if (!value) return "Fecha desconocida";
+      const date = new Date(value);
+      return date.toLocaleDateString("es-ES", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+    }
+
+    async function uploadImage(file) {
+      const imagePath = `${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
+      const { data, error } = await supabaseClient.storage.from(SUPABASE_BUCKET).upload(imagePath, file, {
+        cacheControl: "3600",
+        upsert: false
+      });
+      if (error) throw new Error(error.message);
+
+      const { data: publicUrlData, error: publicUrlError } = supabaseClient.storage.from(SUPABASE_BUCKET).getPublicUrl(imagePath);
+      if (publicUrlError) throw new Error(publicUrlError.message);
+      return { imageUrl:publicUrlData.publicUrl, imagePath };
+    }
+
+    async function subirPublicacion() {
+      const title = titleInput.value.trim();
+      const text = textInput.value.trim();
+      const files = imageInput.files;
+      const isAdmin = currentUser?.email === adminEmail;
+
+      if (!isAdmin) {
+        alert("Solo el administrador puede publicar.");
+        return;
+      }
+
+      if (files.length === 0 && currentImageUrls.length === 0) {
+        alert("Selecciona al menos una imagen para publicar.");
+        return;
+      }
+
+      if (files.length > 5) {
+        return alert("Máximo 5 fotos");
+      }
+
+      publishBtn.disabled = true;
+      publishBtn.textContent = currentEditId ? "Guardando..." : "Publicando...";
+
+      try {
+        let urls = [];
+        let paths = [];
+
+        if (files.length > 0) {
+          for (let file of files) {
+            const filePath = `Entries/${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
+            const { data, error } = await supabaseClient.storage
+              .from('Entries')
+              .upload(filePath, file);
+
+            if (error) throw new Error(error.message);
+
+            const { data: publicUrlData, error: publicUrlError } = supabaseClient.storage.from('Entries').getPublicUrl(filePath);
+            if (publicUrlError) throw new Error(publicUrlError.message);
+
+            urls.push(publicUrlData.publicUrl);
+            paths.push(filePath);
+          }
+        } else {
+          urls = [...currentImageUrls];
+          paths = [...currentImagePaths];
+        }
+
+        const payload = {
+          title: title || "",
+          text: text || "",
+          imageUrls: urls,
+          imagePaths: paths,
+          updatedAt: new Date().toISOString()
+        };
+
+        if (currentEditId) {
+          const { error } = await supabaseClient.from('diario').update(payload).eq('id', currentEditId);
+          if (error) throw new Error(error.message);
+          alert("Cambios guardados con éxito.");
+          window.location.reload();
+        } else {
+          const { error: insertError } = await supabaseClient
+            .from('diario')
+            .insert([{
+              title: titleInput.value || "",
+              text: textInput.value || "",
+              imageUrls: urls,
+              imagePaths: paths,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            }]);
+          if (insertError) throw new Error(insertError.message);
+        }
+
+        resetForm();
+        await loadEntries();
+      } catch (error) {
+        alert("Error al guardar la publicación: " + error.message);
+      } finally {
+        publishBtn.disabled = false;
+        publishBtn.textContent = currentEditId ? "Guardar cambios" : "Publicar";
+      }
+    }
+
+    async function guardarEdicion(id) {
+      const nuevoTitulo = titleInput.value;
+      const nuevoTexto = textInput.value;
+
+      const { error } = await supabaseClient
+        .from('diario')
+        .update({
+          title: nuevoTitulo,
+          text: nuevoTexto,
+          updatedAt: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) {
+        alert("Error al actualizar: " + error.message);
+      } else {
+        alert("Cambios guardados con éxito.");
+        window.location.reload();
+      }
+    }
+
+    // Para Registrarse (Sign Up)
+    async function registrarUsuario() {
+      const { data, error } = await supabaseClient.auth.signUp({
+        email: 'sagredoarianacompu2023@gmail.com',
+        password: 'mnbvcxz2005',
+      })
+      if (error) console.error("Error al registrarse:", error.message);
+      else console.log("Registro exitoso", data.user);
+    }
+
+    // Función para Iniciar Sesión pidiendo datos
+    async function iniciarSesion() {
+        // Obtenemos los valores que escribiste en la pantalla
+        const email = document.getElementById('emailInput').value.trim();
+        const password = document.getElementById('passwordInput').value.trim();
+
+        // Validación: comprobar que no estén vacíos
+        if (!email || !password) {
+            alert("Por favor completa el email y la contraseña.");
+            return;
+        }
+
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+            email: email,
+            password: password,
+        });
+
+        if (error) {
+            console.error("Error al entrar:", error.message);
+            alert("Error al entrar: " + error.message);
+        } else {
+            console.log("¡Sesión iniciada!", data.user);
+            currentUser = data.user;
+            
+            // Verificar si el usuario es administrador
+            if (data.user.email === adminEmail) {
+                console.log("✓ Acceso de administrador detectado");
+                alert("¡Bienvenido, Editor!");
+            } else {
+                alert("¡Bienvenido!");
+            }
+            
+            // Limpiar campos y cerrar modal
+            cancelLogin();
+            updateInterface();
+        }
+    }
+
+    // Función para Crear Editor pidiendo datos
+    async function crearEditor() {
+        // Obtenemos los valores que escribiste en la pantalla
+        const email = document.getElementById('emailInput').value.trim();
+        const password = document.getElementById('passwordInput').value.trim();
+
+        // Validación: comprobar que no estén vacíos
+        if (!email || !password) {
+            alert("Por favor completa el email y la contraseña.");
+            return;
+        }
+
+        // Validación: contraseña mínima de 6 caracteres
+        if (password.length < 6) {
+            alert("La contraseña debe tener al menos 6 caracteres.");
+            return;
+        }
+
+        const { data, error } = await supabaseClient.auth.signUp({
+            email: email,
+            password: password,
+        });
+
+        if (error) {
+            console.error("Error al crear usuario:", error.message);
+            alert("Error al crear: " + error.message);
+        } else {
+            console.log("Usuario creado con éxito:", data.user);
+            alert("Usuario creado con éxito. Ahora puedes iniciar sesión con estos datos.");
+            
+            // Limpiar campos después de crear el usuario
+            document.getElementById('emailInput').value = "";
+            document.getElementById('passwordInput').value = "";
+        }
+    }
+
+    function renderEntry(item) {
+      const card = document.createElement("article");
+      card.className = "card";
+      card.dataset.id = item.id;
+
+      const image = document.createElement("img");
+      image.className = "card-image";
+      const imageUrl = Array.isArray(item.imageUrls) ? item.imageUrls[0] : item.imageUrl || "";
+      image.src = imageUrl;
+      image.alt = item.title || "Publicación";
+
+      const body = document.createElement("div");
+      body.className = "card-body";
+
+      const titleEl = document.createElement("h3");
+      titleEl.className = "card-title";
+      titleEl.textContent = item.title || "Sin título";
+
+      const dateEl = document.createElement("p");
+      dateEl.className = "card-date";
+      dateEl.textContent = formatTimestamp(item.createdAt || item.updatedAt);
+
+      body.append(titleEl, dateEl);
+
+      // Hacer la tarjeta clickeable para abrir modal
+      card.addEventListener("click", (e) => {
+        if (!e.target.classList.contains("delete") && !e.target.classList.contains("edit")) {
+          verDetalle(item.id);
+        }
+      });
+
+      // Agregar controles de admin si es necesario
+      const isAdmin = currentUser?.email === adminEmail;
+      if (isAdmin) {
+        const actions = document.createElement("div");
+        actions.className = "card-actions";
+        actions.style.position = "absolute";
+        actions.style.top = "10px";
+        actions.style.right = "10px";
+        actions.style.zIndex = "10";
+        actions.style.gap = "5px";
+
+        const editButton = document.createElement("button");
+        editButton.type = "button";
+        editButton.className = "edit";
+        editButton.textContent = "✎";
+        editButton.style.padding = "6px 10px";
+        editButton.addEventListener("click", (e) => {
+          e.stopPropagation();
+          loadEntryForEdit(item.id, item);
+        });
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "delete";
+        deleteButton.textContent = "🗑";
+        deleteButton.style.padding = "6px 10px";
+        deleteButton.addEventListener("click", (e) => {
+          e.stopPropagation();
+          eliminarPublicacion(item.id, item.imagePaths || item.imagePath);
+        });
+
+        actions.append(editButton, deleteButton);
+        card.appendChild(actions);
+      }
+
+      card.append(image, body);
+      return card;
+    }
+
+    async function verDetalle(id) {
+      try {
+        const { data: item, error } = await supabaseClient.from('diario').select('*').eq('id', id).single();
+        if (error) throw new Error(error.message);
+        openEntryModal(item);
+      } catch (error) {
+        console.error('Error al cargar detalle:', error);
+        alert('No se pudo mostrar el detalle de la publicación.');
+      }
+    }
+
+    function openEntryModal(item) {
+      currentModalEntry = item;
+      currentModalImageIndex = 0;
+      const modal = document.getElementById("entryModal");
+
+      const imageUrls = Array.isArray(item.imageUrls) ? item.imageUrls : item.imageUrl ? [item.imageUrl] : [];
+      const modalImage = document.getElementById("modalImage");
+      const modalTitle = document.getElementById("modalTitle");
+      const modalDate = document.getElementById("modalDate");
+      const modalText = document.getElementById("modalText");
+      const modalGallery = document.getElementById("modalGallery");
+      const modalControls = document.getElementById("modalControls");
+
+      // Cargar contenido
+      modalImage.src = imageUrls[0] || "";
+      modalTitle.textContent = item.title || "Sin título";
+      modalDate.textContent = formatTimestamp(item.createdAt || item.updatedAt);
+      modalText.textContent = item.text || "";
+
+      // Crear galería de miniaturas si hay múltiples imágenes
+      modalGallery.innerHTML = "";
+      if (imageUrls.length > 1) {
+        imageUrls.forEach((url, idx) => {
+          const thumb = document.createElement("img");
+          thumb.src = url;
+          thumb.className = "entry-modal-thumbnail" + (idx === 0 ? " active" : "");
+          thumb.addEventListener("click", () => switchModalImage(idx));
+          modalGallery.appendChild(thumb);
+        });
+      }
+
+      // Controles de navegación si hay múltiples imágenes
+      modalControls.innerHTML = "";
+      if (imageUrls.length > 1) {
+        const prevBtn = document.createElement("button");
+        prevBtn.className = "entry-modal-btn";
+        prevBtn.textContent = "← Anterior";
+        prevBtn.addEventListener("click", () => switchModalImage(currentModalImageIndex - 1));
+        modalControls.appendChild(prevBtn);
+
+        const counter = document.createElement("span");
+        counter.style.color = "var(--dark-blue)";
+        counter.style.alignSelf = "center";
+        counter.textContent = `${currentModalImageIndex + 1} / ${imageUrls.length}`;
+        modalControls.appendChild(counter);
+
+        const nextBtn = document.createElement("button");
+        nextBtn.className = "entry-modal-btn";
+        nextBtn.textContent = "Siguiente →";
+        nextBtn.addEventListener("click", () => switchModalImage(currentModalImageIndex + 1));
+        modalControls.appendChild(nextBtn);
+      }
+
+      modal.classList.add("show");
+    }
+
+    function switchModalImage(index) {
+      const imageUrls = Array.isArray(currentModalEntry.imageUrls) ? currentModalEntry.imageUrls : currentModalEntry.imageUrl ? [currentModalEntry.imageUrl] : [];
+      if (index < 0) index = imageUrls.length - 1;
+      if (index >= imageUrls.length) index = 0;
+
+      currentModalImageIndex = index;
+      document.getElementById("modalImage").src = imageUrls[index];
+
+      // Actualizar miniaturas activas
+      document.querySelectorAll(".entry-modal-thumbnail").forEach((thumb, idx) => {
+        thumb.classList.toggle("active", idx === index);
+      });
+
+      // Actualizar contador
+      const counter = document.querySelector(".entry-modal-controls span");
+      if (counter) counter.textContent = `${index + 1} / ${imageUrls.length}`;
+    }
+
+    function closeEntryModal() {
+      document.getElementById("entryModal").classList.remove("show");
+      currentModalEntry = null;
+    }
+
+    function loadEntryForEdit(id, item) {
+      currentEditId = id;
+      titleInput.value = item.title || "";
+      textInput.value = item.text || "";
+      currentImageUrls = Array.isArray(item.imageUrls) ? item.imageUrls : item.imageUrl ? [item.imageUrl] : [];
+      currentImagePaths = Array.isArray(item.imagePaths) ? item.imagePaths : item.imagePath ? [item.imagePath] : [];
+      currentImageUrl = currentImageUrls[0] || "";
+      currentImagePath = currentImagePaths[0] || "";
+      publishBtn.textContent = "Guardar cambios";
+      cancelEditBtn.classList.remove("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function eliminarPublicacion(id, imagePath) {
+      const isAdmin = currentUser?.email === adminEmail;
+      if (!isAdmin) {
+        alert("Solo el administrador puede borrar publicaciones.");
+        return;
+      }
+
+      const confirmar = confirm("¿Estás seguro de eliminar esta publicación por completo?");
+      if (!confirmar) return;
+
+      try {
+        // 1. Borrar la fila de la tabla 'diario' (Elimina el texto y el registro)
+        const { error: tableError } = await supabaseClient
+          .from('diario')
+          .delete()
+          .eq('id', id);
+
+        if (tableError) throw tableError;
+
+        // 2. Borrar la imagen del Storage
+        if (Array.isArray(imagePath)) {
+          await supabaseClient.storage.from('Entries').remove(imagePath);
+        } else if (imagePath) {
+          await supabaseClient.storage.from('Entries').remove([imagePath]);
+        }
+
+        alert("Publicación eliminada correctamente.");
+        window.location.reload();
+
+      } catch (error) {
+        console.error("Error al eliminar:", error);
+        alert("No se pudo eliminar: " + error.message);
+      }
+    }
+
+    async function loadEntries() {
+      const { data, error } = await supabaseClient.from('diario').select('*').order('createdAt', { ascending: false });
+      if (error) {
+        showStatus("No se pudo cargar el feed: " + error.message);
+        return;
+      }
+
+      entriesContainer.innerHTML = "";
+      if (!data || data.length === 0) {
+        showStatus("Sin publicaciones aún. El administrador puede agregar entradas.");
+        return;
+      }
+
+      data.forEach((item) => {
+        entriesContainer.appendChild(renderEntry(item));
+      });
+      showStatus(`${data.length} publicación(es) visibles.`);
+    }
+
+    initAuth();
+    loadEntries();
+
+    function resetForm() {
+    // Limpia los inputs de texto
+    document.getElementById('titleInput').value = '';
+    document.getElementById('textInput').value = '';
+    document.getElementById('imageInput').value = '';
+    
+    // Resetear variables de edición
+    currentEditId = null;
+    currentImageUrls = [];
+    currentImagePaths = [];
+    currentImageUrl = "";
+    currentImagePath = "";
+    
+    // Actualizar botón
+    publishBtn.textContent = "Publicar";
+    cancelEditBtn.classList.add("hidden");
+    
+    // Si tienes un mensaje de estado, lo reinicia
+    const status = document.getElementById('feedStatus');
+    if (status) status.innerText = '';
+    
+    console.log("Formulario reiniciado correctamente.");
+}
+  </script>
+</body>
+</html> 
+ 
