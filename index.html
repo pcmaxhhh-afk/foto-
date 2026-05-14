@@ -85,24 +85,24 @@
       display: block;
     }
 
-    .card-body {
-      padding: 12px 12px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+   .card-body {
+      display: none !important; /*oculta el titulo y la echa de la nuatura*/
     }
-.card-title {
-      font-size: 0.85rem !important; /* Tamaño pequeño para que no se amontone */
-      font-weight: bold;
-      color: var(--dark-blue);
-      margin-top: 5px;
-    }
-    .card-date {
-      font-size: 0.7rem !important;
-      color: var(--muted);
+    .card{ 
+        position:relative;
+        border-radius: 15px;
+        background:transparent;
+        overflow: hidden;
+        border:none;
+        aspect-ratio: 1 / 1;
+    }  
+    .card-image{
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+       display:block;
     }
     .card-text { display: none; }
-
 
     /* BOTONES DE LA CARD (EDITAR/BORRAR): Ahora sólidos */
     .card-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; padding-bottom: 10px; padding-right: 10px; }
